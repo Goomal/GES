@@ -1,10 +1,10 @@
 library(dplyr)
 library(magrittr)
-library(data.table)
-library(xlsx)
 library(ggplot2)
-library(plotly)
 library(zoo)
+library(gridExtra)
+library(data.table)
+library(plotly)
 
 ## importing excel file excel
 # wd <- c("W:/Projects In Action/40567 - Bazan Retrofit (BRR)/12. O&M/Aviv/5. Process/1.BRR Performance/2.Raw_data/2021/8'th report_29.09.2021 to 25.11.2021")
@@ -14,23 +14,20 @@ library(zoo)
 # df <- bind_rows(df.list)
 
 ## importing excel file CSV
-wd <- c("C:/Users/Shayl/Desktop/My projects/MMF/1-3")
-multmerge = function(wd){
-  filenames=list.files(path=wd, full.names=TRUE)
-  rbindlist(lapply(filenames, fread))
-}
-
-wd <- c("C:/Users/Shayl/Desktop/My projects/MMF/1-3")
+wd <- c("C:/Users/Shayl/Desktop/My projects/DATA/data")
 setwd(wd)
-file_names <- dir(wd)
+file_names <- dir(pattern = "*Analogs")
 df <- do.call(rbind, lapply(file_names, read.csv, header = TRUE, sep = ",", quote = "'"))
 
+# df <- sample_frac(df, size = .1)
+# df <- df[!duplicated(df),]
+# df$TimeStamp <- as.POSIXct(df$TimeStamp)
+# df$year <- as.numeric(format(as.Date(df$TimeStamp), "%Y"))
 
 # df <- sample_frac(df, size = .6)
 # df <- df[!duplicated(df),]
 # df$TimeStamp <- as.POSIXct(df$TimeStamp)
-# df$year <- as.numeric(format(as.Date(df$TimeStamp), "%Y"))
-# df <- df[df$year > 2017,]
+
 
 
 #### renaming ####
@@ -173,7 +170,7 @@ df <- df %>%
 
 
 
-#### end
+#### end ####
 
 ## RO analysis
 
@@ -195,7 +192,7 @@ RO2_Active_area_stage3 <- RO2_Active_area*Membrain_per_PV*2 #m^2
 RO2_Active_area_stage2 <- RO2_Active_area*Membrain_per_PV*4 #m^2
 RO2_Active_area_stage1 <- RO2_Active_area*Membrain_per_PV*9 #m^2
 RO2_total_active_area  <- sum(RO2_Active_area_stage1,RO2_Active_area_stage2,RO2_Active_area_stage3)
-#### end
+#### end ####
 
 #### data manipulation for RO pass1 and 2 analysis ####
 
@@ -207,11 +204,11 @@ RO_recovery <- function(RO) {
     pass1C_1st_stage_recovery = ifelse(df$RO_PASS1C_PRODUCT_FLOW > 50,(RO$RO_PASS1C_PRODUCT_FLOW - RO$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW)/(RO$RO_PASS1C_CONC._FLOW + RO$RO_PASS1C_PRODUCT_FLOW),NA),
     pass1D_1st_stage_recovery = ifelse(df$RO_PASS1D_PRODUCT_FLOW > 50,(RO$RO_PASS1D_PRODUCT_FLOW - RO$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW)/(RO$RO_PASS1D_CONC._FLOW + RO$RO_PASS1D_PRODUCT_FLOW),NA),
     pass1E_1st_stage_recovery = ifelse(df$RO_PASS1E_PRODUCT_FLOW > 50,(RO$RO_PASS1E_PRODUCT_FLOW - RO$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW)/(RO$RO_PASS1E_CONC._FLOW + RO$RO_PASS1E_PRODUCT_FLOW),NA),
-    pass1A_2nd_stage_recovery = ifelse(df$RO_PASS1A_PRODUCT_FLOW > 50,RO$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW/RO$RO_Pass1A_Stage2_Feed_Flow,NA),
-    pass1B_2nd_stage_recovery = ifelse(df$RO_PASS1B_PRODUCT_FLOW > 50,RO$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW/RO$RO_Pass1B_Stage2_Feed_Flow,NA),
-    pass1C_2nd_stage_recovery = ifelse(df$RO_PASS1C_PRODUCT_FLOW > 50,RO$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW/RO$RO_Pass1C_Stage2_Feed_Flow,NA),
-    pass1D_2nd_stage_recovery = ifelse(df$RO_PASS1D_PRODUCT_FLOW > 50,RO$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW/RO$RO_Pass1D_Stage2_Feed_Flow,NA),
-    pass1E_2nd_stage_recovery = ifelse(df$RO_PASS1E_PRODUCT_FLOW > 50,RO$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW/RO$RO_Pass1E_Stage2_Feed_Flow,NA),
+    pass1A_2nd_stage_recovery = ifelse(df$RO_PASS1A_PRODUCT_FLOW > 50,RO$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW/(RO$RO_PASS1A_CONC._FLOW - RO$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW),NA),
+    pass1B_2nd_stage_recovery = ifelse(df$RO_PASS1B_PRODUCT_FLOW > 50,RO$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW/(RO$RO_PASS1B_CONC._FLOW - RO$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW),NA),
+    pass1C_2nd_stage_recovery = ifelse(df$RO_PASS1C_PRODUCT_FLOW > 50,RO$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW/(RO$RO_PASS1C_CONC._FLOW - RO$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW),NA),
+    pass1D_2nd_stage_recovery = ifelse(df$RO_PASS1D_PRODUCT_FLOW > 50,RO$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW/(RO$RO_PASS1D_CONC._FLOW - RO$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW),NA),
+    pass1E_2nd_stage_recovery = ifelse(df$RO_PASS1E_PRODUCT_FLOW > 50,RO$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW/(RO$RO_PASS1E_CONC._FLOW - RO$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW),NA),
     pass1A_recovery           = ifelse(df$RO_PASS1A_PRODUCT_FLOW > 50,RO$RO_PASS1A_PRODUCT_FLOW/(RO$RO_PASS1A_PRODUCT_FLOW + RO$RO_PASS1A_CONC._FLOW),NA),
     pass1B_recovery           = ifelse(df$RO_PASS1B_PRODUCT_FLOW > 50,RO$RO_PASS1B_PRODUCT_FLOW/(RO$RO_PASS1B_PRODUCT_FLOW + RO$RO_PASS1B_CONC._FLOW),NA),
     pass1C_recovery           = ifelse(df$RO_PASS1C_PRODUCT_FLOW > 50,RO$RO_PASS1C_PRODUCT_FLOW/(RO$RO_PASS1C_PRODUCT_FLOW + RO$RO_PASS1C_CONC._FLOW),NA),
@@ -264,24 +261,24 @@ RO_Norm._DP <- function(RO,df) {
 # Concentration factor
 RO_CF <- function(RO){
   data.frame(
-    CF_pass1A = ifelse(RO$pass1A_recovery > 0, log(1/(1-RO$pass1A_recovery))/RO$pass1A_recovery,NA),
-    CF_pass1B = ifelse(RO$pass1B_recovery > 0, log(1/(1-RO$pass1B_recovery))/RO$pass1B_recovery,NA),
-    CF_pass1C = ifelse(RO$pass1C_recovery > 0, log(1/(1-RO$pass1C_recovery))/RO$pass1C_recovery,NA),
-    CF_pass1D = ifelse(RO$pass1D_recovery > 0, log(1/(1-RO$pass1D_recovery))/RO$pass1D_recovery,NA),
-    CF_pass1E = ifelse(RO$pass1E_recovery > 0, log(1/(1-RO$pass1E_recovery))/RO$pass1E_recovery,NA),
-    CF_pass2A = ifelse(RO$Pass2A_recovery > 0, log(1/(1-RO$Pass2A_recovery))/RO$Pass2A_recovery,NA),
-    CF_pass2B = ifelse(RO$Pass2B_recovery > 0, log(1/(1-RO$Pass2B_recovery))/RO$Pass2B_recovery,NA),
-    CF_pass2C = ifelse(RO$Pass2C_recovery > 0, log(1/(1-RO$Pass2C_recovery))/RO$Pass2C_recovery,NA),
-    CF_pass1A_1st_stage = ifelse(RO$pass1A_1st_stage_recovery > 0, log(1/(1-RO$pass1A_1st_stage_recovery))/RO$pass1A_1st_stage_recovery,NA),
-    CF_pass1B_1st_stage = ifelse(RO$pass1B_1st_stage_recovery > 0, log(1/(1-RO$pass1B_1st_stage_recovery))/RO$pass1B_1st_stage_recovery,NA),
-    CF_pass1C_1st_stage = ifelse(RO$pass1C_1st_stage_recovery > 0, log(1/(1-RO$pass1C_1st_stage_recovery))/RO$pass1C_1st_stage_recovery,NA),
-    CF_pass1D_1st_stage = ifelse(RO$pass1D_1st_stage_recovery > 0, log(1/(1-RO$pass1D_1st_stage_recovery))/RO$pass1D_1st_stage_recovery,NA),
-    CF_pass1E_1st_stage = ifelse(RO$pass1E_1st_stage_recovery > 0, log(1/(1-RO$pass1E_1st_stage_recovery))/RO$pass1E_1st_stage_recovery,NA),
-    CF_pass1A_2nd_stage = ifelse(RO$pass1A_2nd_stage_recovery > 0, log(1/(1-RO$pass1A_2nd_stage_recovery))/RO$pass1A_2nd_stage_recovery,NA),
-    CF_pass1B_2nd_stage = ifelse(RO$pass1B_2nd_stage_recovery > 0, log(1/(1-RO$pass1B_2nd_stage_recovery))/RO$pass1B_2nd_stage_recovery,NA),
-    CF_pass1C_2nd_stage = ifelse(RO$pass1C_2nd_stage_recovery > 0, log(1/(1-RO$pass1C_2nd_stage_recovery))/RO$pass1C_2nd_stage_recovery,NA),
-    CF_pass1D_2nd_stage = ifelse(RO$pass1D_2nd_stage_recovery > 0, log(1/(1-RO$pass1D_2nd_stage_recovery))/RO$pass1D_2nd_stage_recovery,NA),
-    CF_pass1E_2nd_stage = ifelse(RO$pass1E_2nd_stage_recovery > 0, log(1/(1-RO$pass1E_2nd_stage_recovery))/RO$pass1E_2nd_stage_recovery,NA)
+    CF_pass1A = ifelse(RO$pass1A_recovery > 0, log(1/RO$pass1A_recovery)/RO$pass1A_recovery,NA),
+    CF_pass1B = ifelse(RO$pass1B_recovery > 0, log(1/RO$pass1B_recovery)/RO$pass1B_recovery,NA),
+    CF_pass1C = ifelse(RO$pass1C_recovery > 0, log(1/RO$pass1C_recovery)/RO$pass1C_recovery,NA),
+    CF_pass1D = ifelse(RO$pass1D_recovery > 0, log(1/RO$pass1D_recovery)/RO$pass1D_recovery,NA),
+    CF_pass1E = ifelse(RO$pass1E_recovery > 0, log(1/RO$pass1E_recovery)/RO$pass1E_recovery,NA),
+    CF_pass2A = ifelse(RO$Pass2A_recovery > 0, log(1/RO$Pass2A_recovery)/RO$Pass2A_recovery,NA),
+    CF_pass2B = ifelse(RO$Pass2B_recovery > 0, log(1/RO$Pass2B_recovery)/RO$Pass2B_recovery,NA),
+    CF_pass2C = ifelse(RO$Pass2C_recovery > 0, log(1/RO$Pass2C_recovery)/RO$Pass2C_recovery,NA),
+    CF_pass1A_1st_stage = ifelse(RO$pass1A_1st_stage_recovery > 0, log(1/RO$pass1A_1st_stage_recovery)/RO$pass1A_1st_stage_recovery,NA),
+    CF_pass1B_1st_stage = ifelse(RO$pass1B_1st_stage_recovery > 0, log(1/RO$pass1B_1st_stage_recovery)/RO$pass1B_1st_stage_recovery,NA),
+    CF_pass1C_1st_stage = ifelse(RO$pass1C_1st_stage_recovery > 0, log(1/RO$pass1C_1st_stage_recovery)/RO$pass1C_1st_stage_recovery,NA),
+    CF_pass1D_1st_stage = ifelse(RO$pass1D_1st_stage_recovery > 0, log(1/RO$pass1D_1st_stage_recovery)/RO$pass1D_1st_stage_recovery,NA),
+    CF_pass1E_1st_stage = ifelse(RO$pass1E_1st_stage_recovery > 0, log(1/RO$pass1E_1st_stage_recovery)/RO$pass1E_1st_stage_recovery,NA),
+    CF_pass1A_2nd_stage = ifelse(RO$pass1A_2nd_stage_recovery > 0, log(1/RO$pass1A_2nd_stage_recovery)/RO$pass1A_2nd_stage_recovery,NA),
+    CF_pass1B_2nd_stage = ifelse(RO$pass1B_2nd_stage_recovery > 0, log(1/RO$pass1B_2nd_stage_recovery)/RO$pass1B_2nd_stage_recovery,NA),
+    CF_pass1C_2nd_stage = ifelse(RO$pass1C_2nd_stage_recovery > 0, log(1/RO$pass1C_2nd_stage_recovery)/RO$pass1C_2nd_stage_recovery,NA),
+    CF_pass1D_2nd_stage = ifelse(RO$pass1D_2nd_stage_recovery > 0, log(1/RO$pass1D_2nd_stage_recovery)/RO$pass1D_2nd_stage_recovery,NA),
+    CF_pass1E_2nd_stage = ifelse(RO$pass1E_2nd_stage_recovery > 0, log(1/RO$pass1E_2nd_stage_recovery)/RO$pass1E_2nd_stage_recovery,NA)
   )
 }  
 
@@ -336,25 +333,34 @@ RO_OP <- function(RO,df){
 }
 
 # normalized permeability
-RO_norm_perm <- function(RO,df,Tempratur_compensation,RO1_Active_area_stage1,RO1_Active_area_stage2){
+RO_norm_perm <- function(RO,df,tp,Aas1,Aas2,tae2){
   data.frame(
-    NPer_pass1A_1st_stage = ifelse(df$RO_PASS1A_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1A_INLET_PRESSURE > 0, ((((df$RO_PASS1A_PRODUCT_FLOW - df$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW)*100)/RO1_Active_area_stage1)/(rowMeans(df[c("RO_PASS1A_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1A_INLET_PRESSURE")])-df$RO_PASS1A_PRODUCT_PRESSURE-RO$OP_pass1A_1st_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1B_1st_stage = ifelse(df$RO_PASS1B_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1B_INLET_PRESSURE > 0, ((((df$RO_PASS1B_PRODUCT_FLOW - df$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW)*100)/RO1_Active_area_stage1)/(rowMeans(df[c("RO_PASS1B_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1B_INLET_PRESSURE")])-df$RO_PASS1B_PRODUCT_PRESSURE-RO$OP_pass1B_1st_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1C_1st_stage = ifelse(df$RO_PASS1C_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1C_INLET_PRESSURE > 0, ((((df$RO_PASS1C_PRODUCT_FLOW - df$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW)*100)/RO1_Active_area_stage1)/(rowMeans(df[c("RO_PASS1C_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1C_INLET_PRESSURE")])-df$RO_PASS1C_PRODUCT_PRESSURE-RO$OP_pass1C_1st_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1D_1st_stage = ifelse(df$RO_PASS1D_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1D_INLET_PRESSURE > 0, ((((df$RO_PASS1D_PRODUCT_FLOW - df$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW)*100)/RO1_Active_area_stage1)/(rowMeans(df[c("RO_PASS1D_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1D_INLET_PRESSURE")])-df$RO_PASS1D_PRODUCT_PRESSURE-RO$OP_pass1D_1st_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1E_1st_stage = ifelse(df$RO_PASS1E_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1E_INLET_PRESSURE > 0, ((((df$RO_PASS1E_PRODUCT_FLOW - df$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW)*100)/RO1_Active_area_stage1)/(rowMeans(df[c("RO_PASS1E_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1E_INLET_PRESSURE")])-df$RO_PASS1E_PRODUCT_PRESSURE-RO$OP_pass1E_1st_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1A_2nd_stage = ifelse(df$RO_PASS1A_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1A_STAGE2_CONC._PRESSURE_TO_TURBO > 0, ((((df$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW)*1000)/RO1_Active_area_stage2)/(rowMeans(df[c("RO_PASS1A_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1A_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1A_PRODUCT_PRESSURE-RO$OP_pass1A_2nd_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1B_2nd_stage = ifelse(df$RO_PASS1B_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1B_STAGE2_CONC._PRESSURE_TO_TURBO > 0, ((((df$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW)*1000)/RO1_Active_area_stage2)/(rowMeans(df[c("RO_PASS1B_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1B_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1B_PRODUCT_PRESSURE-RO$OP_pass1B_2nd_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1C_2nd_stage = ifelse(df$RO_PASS1C_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1C_STAGE2_CONC._PRESSURE_TO_TURBO > 0, ((((df$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW)*1000)/RO1_Active_area_stage2)/(rowMeans(df[c("RO_PASS1C_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1C_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1C_PRODUCT_PRESSURE-RO$OP_pass1C_2nd_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1D_2nd_stage = ifelse(df$RO_PASS1D_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1D_STAGE2_CONC._PRESSURE_TO_TURBO > 0, ((((df$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW)*1000)/RO1_Active_area_stage2)/(rowMeans(df[c("RO_PASS1D_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1D_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1D_PRODUCT_PRESSURE-RO$OP_pass1D_2nd_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass1E_2nd_stage = ifelse(df$RO_PASS1E_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1E_STAGE2_CONC._PRESSURE_TO_TURBO > 0, ((((df$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW)*1000)/RO1_Active_area_stage2)/(rowMeans(df[c("RO_PASS1E_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1E_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1E_PRODUCT_PRESSURE-RO$OP_pass1E_2nd_stage))/(1+Tempratur_compensation*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
-    NPer_pass2A           = ifelse(df$RO_PASS2A_FEED_PRESSURE >0 & df$RO_PASS2A_STAGE1_CONC._PRESSURE > 0 & df$RO_PASS2A_STAGE2_CONC._PRESSURE > 0 & df$RO_PASS2A_CONC._PRESSURE > 0, (df$RO_PASS2A_CULCULATED_PRODUCT_FLOW*100/RO1_Active_area_stage2)/((rowMeans(df[c("RO_PASS2A_FEED_PRESSURE","RO_PASS2A_STAGE1_CONC._PRESSURE","RO_PASS2A_STAGE2_CONC._PRESSURE","RO_PASS2A_CONC._PRESSURE")])-df$RO_PASS2A_PRODUCT_PRESSURE)*(1+Tempratur_compensation*(df$RO_PASS2_CARTRIDGE_OUTLET_TEMP.-25))),NA),
-    NPer_pass2B           = ifelse(df$RO_PASS2B_FEED_PRESSURE >0 & df$RO_PASS2B_STAGE1_CONC._PRESSURE > 0 & df$RO_PASS2B_STAGE2_CONC._PRESSURE > 0 & df$RO_PASS2B_CONC._PRESSURE > 0, (df$RO_PASS2B_CULCULATED_PRODUCT_FLOW*100/RO1_Active_area_stage2)/((rowMeans(df[c("RO_PASS2B_FEED_PRESSURE","RO_PASS2B_STAGE1_CONC._PRESSURE","RO_PASS2B_STAGE2_CONC._PRESSURE","RO_PASS2B_CONC._PRESSURE")])-df$RO_PASS2B_PRODUCT_PRESSURE)*(1+Tempratur_compensation*(df$RO_PASS2_CARTRIDGE_OUTLET_TEMP.-25))),NA),
-    NPer_pass2C           = ifelse(df$RO_PASS2C_FEED_PRESSURE >0 & df$RO_PASS2C_STAGE1_CONC._PRESSURE > 0 & df$RO_PASS2C_STAGE2_CONC._PRESSURE > 0 & df$RO_PASS2C_CONC._PRESSURE > 0, (df$RO_PASS2C_CULCULATED_PRODUCT_FLOW*100/RO1_Active_area_stage2)/((rowMeans(df[c("RO_PASS2C_FEED_PRESSURE","RO_PASS2C_STAGE1_CONC._PRESSURE","RO_PASS2C_STAGE2_CONC._PRESSURE","RO_PASS2C_CONC._PRESSURE")])-df$RO_PASS2C_PRODUCT_PRESSURE)*(1+Tempratur_compensation*(df$RO_PASS2_CARTRIDGE_OUTLET_TEMP.-25))),NA)
+    NPer_pass1A_1st_stage = ifelse(df$RO_PASS1A_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1A_INLET_PRESSURE > 0, ((((df$RO_PASS1A_PRODUCT_FLOW - df$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW)*1000)/Aas1)/(rowMeans(df[c("RO_PASS1A_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1A_INLET_PRESSURE")])-df$RO_PASS1A_PRODUCT_PRESSURE-RO$OP_pass1A_1st_stage))/(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
+    NPer_pass1B_1st_stage = ifelse(df$RO_PASS1B_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1B_INLET_PRESSURE > 0, ((((df$RO_PASS1B_PRODUCT_FLOW - df$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW)*1000)/Aas1)/(rowMeans(df[c("RO_PASS1B_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1B_INLET_PRESSURE")])-df$RO_PASS1B_PRODUCT_PRESSURE-RO$OP_pass1B_1st_stage))/(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
+    NPer_pass1C_1st_stage = ifelse(df$RO_PASS1C_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1C_INLET_PRESSURE > 0, ((((df$RO_PASS1C_PRODUCT_FLOW - df$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW)*1000)/Aas1)/(rowMeans(df[c("RO_PASS1C_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1C_INLET_PRESSURE")])-df$RO_PASS1C_PRODUCT_PRESSURE-RO$OP_pass1C_1st_stage))/(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
+    NPer_pass1D_1st_stage = ifelse(df$RO_PASS1D_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1D_INLET_PRESSURE > 0, ((((df$RO_PASS1D_PRODUCT_FLOW - df$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW)*1000)/Aas1)/(rowMeans(df[c("RO_PASS1D_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1D_INLET_PRESSURE")])-df$RO_PASS1D_PRODUCT_PRESSURE-RO$OP_pass1D_1st_stage))/(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
+    NPer_pass1E_1st_stage = ifelse(df$RO_PASS1E_STAGE1_CONC._PRESSURE_TO_TURBO > 0 & df$RO_PASS1E_INLET_PRESSURE > 0, ((((df$RO_PASS1E_PRODUCT_FLOW - df$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW)*1000)/Aas1)/(rowMeans(df[c("RO_PASS1E_STAGE1_CONC._PRESSURE_TO_TURBO","RO_PASS1E_INLET_PRESSURE")])-df$RO_PASS1E_PRODUCT_PRESSURE-RO$OP_pass1E_1st_stage))/(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25)),NA),
+    NPer_pass1A_2nd_stage = ifelse(df$RO_PASS1A_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1A_STAGE2_CONC._PRESSURE_TO_TURBO > 0, (df$RO_PASS1A_2nd_STAGE_PRODUCT_FLOW*1000)/((Aas2*(rowMeans(df[c("RO_PASS1A_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1A_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1A_PRODUCT_PRESSURE-RO$OP_pass1A_2nd_stage))*(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25))),NA),
+    NPer_pass1B_2nd_stage = ifelse(df$RO_PASS1B_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1B_STAGE2_CONC._PRESSURE_TO_TURBO > 0, (df$RO_PASS1B_2nd_STAGE_PRODUCT_FLOW*1000)/((Aas2*(rowMeans(df[c("RO_PASS1B_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1B_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1B_PRODUCT_PRESSURE-RO$OP_pass1B_2nd_stage))*(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25))),NA),
+    NPer_pass1C_2nd_stage = ifelse(df$RO_PASS1C_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1C_STAGE2_CONC._PRESSURE_TO_TURBO > 0, (df$RO_PASS1C_2nd_STAGE_PRODUCT_FLOW*1000)/((Aas2*(rowMeans(df[c("RO_PASS1C_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1C_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1C_PRODUCT_PRESSURE-RO$OP_pass1C_2nd_stage))*(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25))),NA),
+    NPer_pass1D_2nd_stage = ifelse(df$RO_PASS1D_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1D_STAGE2_CONC._PRESSURE_TO_TURBO > 0, (df$RO_PASS1D_2nd_STAGE_PRODUCT_FLOW*1000)/((Aas2*(rowMeans(df[c("RO_PASS1D_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1D_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1D_PRODUCT_PRESSURE-RO$OP_pass1D_2nd_stage))*(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25))),NA),
+    NPer_pass1E_2nd_stage = ifelse(df$RO_PASS1E_STAGE2_INLET_PRESSURE_TURBO_OUTLET > 0 & df$RO_PASS1E_STAGE2_CONC._PRESSURE_TO_TURBO > 0, (df$RO_PASS1E_2nd_STAGE_PRODUCT_FLOW*1000)/((Aas2*(rowMeans(df[c("RO_PASS1E_STAGE2_INLET_PRESSURE_TURBO_OUTLET","RO_PASS1E_STAGE2_CONC._PRESSURE_TO_TURBO")])-df$RO_PASS1E_PRODUCT_PRESSURE-RO$OP_pass1E_2nd_stage))*(1+tp*(df$RO_PASS1_CARTRIDGE_INLET_TEMP.-25))),NA),
+    NPer_pass2A           = ifelse(df$RO_PASS2A_FEED_PRESSURE >0 & df$RO_PASS2A_STAGE1_CONC._PRESSURE > 0 & df$RO_PASS2A_STAGE2_CONC._PRESSURE > 0 & df$RO_PASS2A_CONC._PRESSURE > 0, (df$RO_PASS2A_CULCULATED_PRODUCT_FLOW*1000)/(tae2*(rowMeans(df[c("RO_PASS2A_FEED_PRESSURE","RO_PASS2A_STAGE1_CONC._PRESSURE","RO_PASS2A_STAGE2_CONC._PRESSURE","RO_PASS2A_CONC._PRESSURE")])-df$RO_PASS2A_PRODUCT_PRESSURE)*(1+tp*(df$RO_PASS2_CARTRIDGE_OUTLET_TEMP.-25))),NA),
+    NPer_pass2B           = ifelse(df$RO_PASS2B_FEED_PRESSURE >0 & df$RO_PASS2B_STAGE1_CONC._PRESSURE > 0 & df$RO_PASS2B_STAGE2_CONC._PRESSURE > 0 & df$RO_PASS2B_CONC._PRESSURE > 0, (df$RO_PASS2B_CULCULATED_PRODUCT_FLOW*1000)/(tae2*(rowMeans(df[c("RO_PASS2B_FEED_PRESSURE","RO_PASS2B_STAGE1_CONC._PRESSURE","RO_PASS2B_STAGE2_CONC._PRESSURE","RO_PASS2B_CONC._PRESSURE")])-df$RO_PASS2B_PRODUCT_PRESSURE)*(1+tp*(df$RO_PASS2_CARTRIDGE_OUTLET_TEMP.-25))),NA),
+    NPer_pass2C           = ifelse(df$RO_PASS2C_FEED_PRESSURE >0 & df$RO_PASS2C_STAGE1_CONC._PRESSURE > 0 & df$RO_PASS2C_STAGE2_CONC._PRESSURE > 0 & df$RO_PASS2C_CONC._PRESSURE > 0, (df$RO_PASS2C_CULCULATED_PRODUCT_FLOW*1000)/(tae2*(rowMeans(df[c("RO_PASS2C_FEED_PRESSURE","RO_PASS2C_STAGE1_CONC._PRESSURE","RO_PASS2C_STAGE2_CONC._PRESSURE","RO_PASS2C_CONC._PRESSURE")])-df$RO_PASS2C_PRODUCT_PRESSURE)*(1+tp*(df$RO_PASS2_CARTRIDGE_OUTLET_TEMP.-25))),NA)
   )
 }
 
 #### end ####
+
+remove_outliers <- function(x, na.rm = TRUE, ...) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+  H <- 1.5 * IQR(x, na.rm = na.rm)
+  y <- x
+  y[x < (qnt[1] - H)] <- NA
+  y[x > (qnt[2] + H)] <- NA
+  y
+}
 
 RO_analysis <- bind_cols(RO_recovery(df), RO_DP(df))
 RO_analysis <- bind_cols(RO_analysis, RO_CF(RO_analysis))
@@ -362,25 +368,72 @@ RO_analysis <- bind_cols(RO_analysis, RO_TDS(RO_analysis,df))
 RO_analysis <- bind_cols(RO_analysis, RO_OP(RO_analysis,df))
 RO_analysis <- bind_cols(RO_analysis, RO_Norm._DP(RO_analysis,df))
 RO_analysis <- bind_cols(RO_analysis, RO_norm_perm(
- RO_analysis,df,Tempratur_compensation,RO1_Active_area_stage1,RO1_Active_area_stage2))
+ RO_analysis,df,Tempratur_compensation,RO1_Active_area_stage1,RO1_Active_area_stage2,RO2_total_active_area))
+RO_analysis = as.data.frame(apply(RO_analysis, 2, remove_outliers ))
 RO_analysis <- RO_analysis %>%
-  mutate(TimeStamp = df$TimeStamp)
+  mutate(TimeStamp = as.POSIXct(df$TimeStamp)) #%>%
+  #mutate(year = df$year)
 
 RO_analysis <- na.locf(RO_analysis)
 
+####  plots ####
 
-####  plots
+wd <- c("C:/Users/Shayl/Desktop/My projects/Plots")
+setwd(wd)
 
 #### DP pass1 1st stage ####
+DP_pass1_1st_stage <- 
+  ggplot(data = RO_analysis,
+         aes(x = TimeStamp),
+         size = 1) +
+  geom_smooth(aes(y = Norm_DP_pass1A_1st_stage, color = "RO A"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1B_1st_stage, color = "RO B"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1C_1st_stage, color = "RO C"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1D_1st_stage, color = "RO D"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1E_1st_stage, color = "RO E"), size = 2) +
+  labs(x = 'Time',
+       y = "Nornalized DP [bar/lmh]",
+       title = "DP pass1 stage1") + 
+  scale_colour_manual(name = 'RO unit', 
+                      values =c('RO A'='red','RO B'='green','RO C'='blue','RO D'='orange','RO E'='black'),
+                      labels = c('RO_A','RO_B','RO_C','RO_D','RO_E'))
+# ggplotly(DP_pass1_1st_stage) %>%
+#   layout(hovermode = FALSE)
+
+#### end ####
+
+#### DP pass1 2nd stage ####
+DP_pass1_2st_stage <- 
+    ggplot(data = RO_analysis,
+               aes(x = TimeStamp),
+                 size = 0.5) +
+  geom_smooth(aes(y = Norm_DP_pass1A_2st_stage, color = "RO A"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1B_2st_stage, color = "RO B"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1C_2st_stage, color = "RO C"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1D_2st_stage, color = "RO D"), size = 2) +
+  geom_smooth(aes(y = Norm_DP_pass1E_2st_stage, color = "RO E"), size = 2) +
+    labs(x = 'Time',
+         y = "Nornalized DP [bar/lmh]",
+         title = "DP pass1 stage2") + 
+  scale_colour_manual(name = 'RO unit', 
+                      values =c('RO A'='red','RO B'='green','RO C'='blue','RO D'='orange','RO E'='black'),
+                      labels = c('RO_A','RO_B','RO_C','RO_D','RO_E'))
+# ggplotly(DP_pass1_2st_stage) %>%
+#   layout(hovermode = FALSE)
+
+
+
+
+#### Permability pass1 1st stage
 Prem_pass1_1st_stage <- 
   ggplot(data = RO_analysis,
          aes(x = TimeStamp),
          size = .5) +
-  geom_point(aes(y = NPer_pass1A_1st_stage, color = "RO A"), size = .5) +
-  #geom_point(aes(y = NPer_pass1B_1st_stage, color = "RO B"), size = .5) +
-  #geom_point(aes(y = NPer_pass1C_1st_stage, color = "RO C"), size = .5) +
-  #geom_point(aes(y = NPer_pass1D_1st_stage, color = "RO D"), size = .5) +
-  #geom_point(aes(y = NPer_pass1E_1st_stage, color = "RO E"), size = .5) +
+  geom_smooth(aes(y = NPer_pass1A_1st_stage, color = "RO A"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1B_1st_stage, color = "RO B"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1C_1st_stage, color = "RO C"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1D_1st_stage, color = "RO D"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1E_1st_stage, color = "RO E"), size = 2) +
   ylim(15,30) +
   labs(x = 'Time',
        y = "Nornalized Permabeality",
@@ -388,21 +441,19 @@ Prem_pass1_1st_stage <-
   scale_colour_manual(name = 'RO unit', 
                       values =c('RO A'='red','RO B'='green','RO C'='blue','RO D'='orange','RO E'='black'),
                       labels = c('RO_A','RO_B','RO_C','RO_D','RO_E'))
-ggplotly(Prem_pass1_1st_stage) %>%
-  layout(hovermode = FALSE)
 
-#### end ####
 
-#### DP pass1 2nd stage ####
+
+#### Permability pass1 2nd stage
 Perm_pass1_2nd_stage <- 
-    ggplot(data = RO_analysis,
-               aes(x = TimeStamp),
-                 size = .5) +
-  geom_point(aes(y = NPer_pass1A_2nd_stage, color = "RO A"), size = .25) +
-  #geom_point(aes(y = NPer_pass1B_2nd_stage, color = "RO B"), size = .25) +
-  #geom_point(aes(y = NPer_pass1C_2nd_stage, color = "RO C"), size = .25) +
-  #geom_point(aes(y = NPer_pass1D_2nd_stage, color = "RO D"), size = .25) +
-  #geom_point(aes(y = NPer_pass1E_2nd_stage, color = "RO E"), size = .25) +
+  ggplot(data = RO_analysis,
+         aes(x = TimeStamp),
+         size = .5) +
+  geom_smooth(aes(y = NPer_pass1A_2nd_stage, color = "RO A"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1B_2nd_stage, color = "RO B"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1C_2nd_stage, color = "RO C"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1D_2nd_stage, color = "RO D"), size = 2) +
+  geom_smooth(aes(y = NPer_pass1E_2nd_stage, color = "RO E"), size = 2) +
   ylim(1,2.5) +
   labs(x = 'Time',
        y = "Nornalized Permabeality",
@@ -410,20 +461,154 @@ Perm_pass1_2nd_stage <-
   scale_colour_manual(name = 'RO unit', 
                       values =c('RO A'='red','RO B'='green','RO C'='blue','RO D'='orange','RO E'='black'),
                       labels = c('RO_A','RO_B','RO_C','RO_D','RO_E'))
-ggplotly(Perm_pass1_2nd_stage) %>%
-  layout(hovermode = FALSE)
+
+P = grid.arrange(Prem_pass1_1st_stage, Perm_pass1_2nd_stage, ncol=1)
+ggsave(P, file=paste0("RO_Perm_", format(Sys.time(), "%d-%b-%Y"), ".png"))
+#### end ####
+
+
+#### DP plot ####
+DP_pass1_2st_stage <- plot_ly(RO_analysis, x = ~TimeStamp)
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1A_2st_stage, name = "RO A")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1B_2st_stage, name = "RO B")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1C_2st_stage, name = "RO C")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1D_2st_stage, name = "RO D")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1E_2st_stage, name = "RO E")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% layout(
+  legend=list(title=list(text='<b> RO unit </b>')),
+  title = "DP pass 1 2nd stage",
+  xaxis = list(
+    rangeselector = list(
+      buttons = list(
+        list(
+          count = 1,
+          label = "1 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 3,
+          label = "3 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 1,
+          label = "YTD",
+          step = "year",
+          stepmode = "todate"),
+        list(step = "all"))),
+    
+    rangeslider = list(type = "date")),
+  yaxis = list(title = "DP [bar]"))
+
+htmlwidgets::saveWidget(as_widget(DP_pass1_2st_stage), paste0("DP 1st stage ", format(Sys.time(), "%d-%b-%Y"), ".html"))
+
+
+DP_pass1_1st_stage <- plot_ly(RO_analysis, x = ~TimeStamp)
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1A_1st_stage, name = "RO A")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1B_1st_stage, name = "RO B")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1C_1st_stage, name = "RO C")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1D_1st_stage, name = "RO D")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1E_1st_stage, name = "RO E")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% layout(
+  legend=list(title=list(text='<b> RO unit </b>')),
+  title = "DP pass 1 1st stage",
+  xaxis = list(
+    rangeselector = list(
+      buttons = list(
+        list(
+          count = 1,
+          label = "1 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 3,
+          label = "3 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 1,
+          label = "YTD",
+          step = "year",
+          stepmode = "todate"),
+        list(step = "all"))),
+    
+    rangeslider = list(type = "date")),
+  yaxis = list(title = "DP [bar]"))
+
+htmlwidgets::saveWidget(as_widget(DP_pass1_2st_stage), paste0("DP 2nd stage ", format(Sys.time(), "%d-%b-%Y"), ".html"))
 
 #### end ####
 
-#### write xl for permebeality
-wd <- c("C:/Users/Bazan_Lab/Desktop/My projects/RO_perm")
-setwd(wd)
+#### permeability plots ####
+DP_pass1_2st_stage <- plot_ly(RO_analysis, x = ~TimeStamp)
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1A_2st_stage, name = "RO A")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1B_2st_stage, name = "RO B")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1C_2st_stage, name = "RO C")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1D_2st_stage, name = "RO D")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% add_lines(y = ~Norm_DP_pass1E_2st_stage, name = "RO E")
+DP_pass1_2st_stage <- DP_pass1_2st_stage %>% layout(
+  legend=list(title=list(text='<b> RO unit </b>')),
+  title = "DP pass 1 2nd stage",
+  xaxis = list(
+    rangeselector = list(
+      buttons = list(
+        list(
+          count = 1,
+          label = "1 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 3,
+          label = "3 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 1,
+          label = "YTD",
+          step = "year",
+          stepmode = "todate"),
+        list(step = "all"))),
+    
+    rangeslider = list(type = "date")),
+  yaxis = list(title = "DP [bar]"))
 
-write_xlsx(
-  RO_analysis[,c("TimeStamp","NPer_pass1A_2nd_stage","NPer_pass1B_2nd_stage","NPer_pass1C_2nd_stage","NPer_pass1D_2nd_stage","NPer_pass1E_2nd_stage")],
-  path = "permebeality.xlsx",
-  col_names = TRUE,
-  format_headers = TRUE,
-  use_zip64 = FALSE
-)
-  
+htmlwidgets::saveWidget(as_widget(DP_pass1_2st_stage), paste0("DP 1st stage ", format(Sys.time(), "%d-%b-%Y"), ".html"))
+
+
+DP_pass1_1st_stage <- plot_ly(RO_analysis, x = ~TimeStamp)
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1A_1st_stage, name = "RO A")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1B_1st_stage, name = "RO B")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1C_1st_stage, name = "RO C")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1D_1st_stage, name = "RO D")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% add_lines(y = ~Norm_DP_pass1E_1st_stage, name = "RO E")
+DP_pass1_1st_stage <- DP_pass1_1st_stage %>% layout(
+  legend=list(title=list(text='<b> RO unit </b>')),
+  title = "DP pass 1 1st stage",
+  xaxis = list(
+    rangeselector = list(
+      buttons = list(
+        list(
+          count = 1,
+          label = "1 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 3,
+          label = "3 mo",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 1,
+          label = "YTD",
+          step = "year",
+          stepmode = "todate"),
+        list(step = "all"))),
+    
+    rangeslider = list(type = "date")),
+  yaxis = list(title = "DP [bar]"))
+
+#### end ####
+
+htmlwidgets::saveWidget(as_widget(DP_pass1_2st_stage), paste0("DP 2nd stage ", format(Sys.time(), "%d-%b-%Y"), ".html"))
+
+#### end ####
