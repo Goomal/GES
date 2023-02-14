@@ -88,9 +88,12 @@ df %>%
 
 #### data Flow plot####
 
-plot_ly(data_flow, x = ~Datetime, y = ~Flow,
-        color = ~Pointer, mode = 'line')
-
+plot_ly(
+  data_flow, x = ~Datetime, y = ~Flow,
+        color = ~Pointer, mode = 'line',
+  # Hover text: shows the P_MAX and the P_avg as well as the flow
+  text = ~paste("Flow: ", Flow, '<br>P_MAX:', PIT_max, '<br>P_mean:', PIT_mean )
+  )
 plot_ly(data_flow, x = ~Datetime, y = ~PIT_max,
         color = ~Pointer, mode = 'line')
 
